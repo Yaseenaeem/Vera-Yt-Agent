@@ -61,11 +61,13 @@ I chose to use only public search metadata from the YouTube Data API instead of 
 Trade-off: I can't see private stuff like click-through rates (CTR) or audience retention graphs.
 Why: You don't need to log in or own a channel to use it. You can research any niche or competitor instantly.
 
+
 2. Streamlit with Custom CSS vs React
 I wanted a quick way to build an interactive dashboard without having to set up a full React frontend from scratch.
 
 Trade-off: Streamlit can be rigid with layouts, so I had to write custom CSS overrides to get the dark YouTube theme and clean padding working right.
 Why: It allowed me to focus heavily on the backend logic and Python data flow while still getting a good-looking interface.
+
 
 3. Median Over Mean
 As mentioned earlier, I used median views across sample sets instead of the mean average.
@@ -105,10 +107,7 @@ pip install -r requirements.txt
 ```
 
 4. Create .env File
-```
 Create a .env file in the main folder and add your API keys:
-```
-
 ```
 YOUTUBE_API_KEY=your_youtube_api_key_here
 GROQ_API_KEY=your_groq_api_key_here
@@ -127,8 +126,9 @@ uvicorn app.main:app --reload --port 8000
 # Terminal 2 (Frontend):
 ```
 streamlit run UI/Ui.py
-Streamlit will open automatically in your browser at http://localhost:8501.
 ```
+Streamlit will open automatically in your browser at http://localhost:8501.
+
 
 # Testing It Out
 Try a broad query: Type something vague like Jewellery or Python. The system will trigger the NEEDS_NICHE state and show you a list of sub-niches to pick from.
