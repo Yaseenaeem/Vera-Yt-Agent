@@ -3,25 +3,30 @@ import os
 import sys
 import importlib.util
 
-# --- DYNAMICALLY LOCATE AND IMPORT ANALYZER.PY ---
-ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+# --- 0. DYNAMIC BACKEND RESOLUTION & IMPORT ---
+current_dir = os.getcwd()
+analyzer_path = None
 
-analyzer_found = False
-for root, dirs, files in os.walk(ROOT_DIR):
+# Scan working directory tree for analyzer.py
+for root, dirs, files in os.walk(current_dir):
     if "analyzer.py" in files:
+        analyzer_path = os.path.join(root, "analyzer.py")
         if root not in sys.path:
             sys.path.insert(0, root)
-        
-        file_path = os.path.join(root, "analyzer.py")
-        spec = importlib.util.spec_from_file_location("analyzer_module", file_path)
-        analyzer_module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(analyzer_module)
-        analyze_niche = analyzer_module.analyze_niche
-        analyzer_found = True
         break
 
-if not analyzer_found:
-    st.error("Critical Error: `analyzer.py` could not be located in the repository.")
+analyze_niche = None
+
+if analyzer_path and os.path.exists(analyzer_path):
+    try:
+        spec = importlib.util.spec_from_file_location("analyzer_module", analyzer_path)
+        analyzer_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(analyzer_module)
+        analyze_niche = getattr(analyzer_module, "analyze_niche", None)
+    except Exception as e:
+        st.error(f"Failed to import analyzer module: {str(e)}")
+else:
+    st.error(f"Critical Error: `analyzer.py` could not be located starting from `{current_dir}`.")
 
 # --- 1. PAGE CONFIGURATION ---
 st.set_page_config(
@@ -171,7 +176,6 @@ if not st.session_state["workspace_active"]:
     st.markdown("<h2 style='font-size: 1.8rem; font-weight: 700; margin-bottom: 6px;'>Welcome to VERA</h2>", unsafe_allow_html=True)
     st.markdown("<p style='color: #AAAAAA; font-size: 1rem; margin-bottom: 2rem;'>An evidence-based intelligence agent designed to replace channel guesswork with observable public market data.</p>", unsafe_allow_html=True)
     
-    # 3-Column Visual Card Layout filling side margins
     col1, col2, col3 = st.columns(3, gap="medium")
     
     with col1:
@@ -225,6 +229,8 @@ else:
     if submitted:
         if not user_input.strip():
             st.warning("Please enter a valid topic or channel concept to proceed.")
+        elif analyze_niche is None:
+            st.error("Analysis module is not loaded. Please check that `analyzer.py` exists in your repository.")
         else:
             with st.spinner("Fetching public market metrics & evaluating strategy..."):
                 try:
@@ -234,7 +240,7 @@ else:
                     if "GROQ_API_KEY" in st.secrets:
                         os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
 
-                    # Execute processing function directly
+                    # Execute backend analysis
                     data = analyze_niche(user_input)
                     
                     if isinstance(data, dict):
