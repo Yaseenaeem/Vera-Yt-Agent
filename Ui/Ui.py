@@ -1,21 +1,27 @@
 import streamlit as st
 import os
 import sys
+import importlib.util
 
-# Add both repository root and app directory to Python path
+# --- DYNAMICALLY LOCATE AND IMPORT ANALYZER.PY ---
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-APP_DIR = os.path.join(ROOT_DIR, "app")
 
-sys.path.extend([ROOT_DIR, APP_DIR])
+analyzer_found = False
+for root, dirs, files in os.walk(ROOT_DIR):
+    if "analyzer.py" in files:
+        if root not in sys.path:
+            sys.path.insert(0, root)
+        
+        file_path = os.path.join(root, "analyzer.py")
+        spec = importlib.util.spec_from_file_location("analyzer_module", file_path)
+        analyzer_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(analyzer_module)
+        analyze_niche = analyzer_module.analyze_niche
+        analyzer_found = True
+        break
 
-# --- IMPORT BACKEND LOGIC DIRECTLY ---
-try:
-    from app.services.analyzer import analyze_niche
-except ModuleNotFoundError:
-    try:
-        from services.analyzer import analyze_niche
-    except ModuleNotFoundError:
-        from analyzer import analyze_niche
+if not analyzer_found:
+    st.error("Critical Error: `analyzer.py` could not be located in the repository.")
 
 # --- 1. PAGE CONFIGURATION ---
 st.set_page_config(
