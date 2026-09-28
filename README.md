@@ -120,7 +120,8 @@ VERA needs both the FastAPI server and the Streamlit UI running at the same time
 
 # Terminal 1 (Backend):
 ```
-python -m uvicorn app.main:app --reload --port 8000```
+python -m uvicorn app.main:app --reload --port 8000
+```
 
 # Terminal 2 (Frontend):
 ```
