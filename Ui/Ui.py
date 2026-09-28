@@ -1,12 +1,12 @@
 import streamlit as st
 import os
+import sys
+
+# Add repository root directory to Python path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 # --- IMPORT BACKEND LOGIC DIRECTLY (BYPASSES PORT 8000 DECOUPLING) ---
-try:
-    from app.services.analyzer import analyze_niche
-except ImportError:
-    # Fallback import depending on repo directory structure
-    from services.analyzer import analyze_niche
+from app.services.analyzer import analyze_niche
 
 # --- 1. PAGE CONFIGURATION ---
 st.set_page_config(
