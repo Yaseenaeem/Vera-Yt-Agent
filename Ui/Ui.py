@@ -1,5 +1,12 @@
 import streamlit as st
-import requests
+import os
+
+# --- IMPORT BACKEND LOGIC DIRECTLY (BYPASSES PORT 8000 DECOUPLING) ---
+try:
+    from app.services.analyzer import analyze_niche
+except ImportError:
+    # Fallback import depending on repo directory structure
+    from services.analyzer import analyze_niche
 
 # --- 1. PAGE CONFIGURATION ---
 st.set_page_config(
@@ -124,8 +131,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-API_URL = "http://127.0.0.1:8000/api/v1/analyze"
-
 # --- 3. SESSION STATE FOR WORKSPACE TRANSITION ---
 if "workspace_active" not in st.session_state:
     st.session_state["workspace_active"] = False
@@ -208,12 +213,16 @@ else:
         else:
             with st.spinner("Fetching public market metrics & evaluating strategy..."):
                 try:
-                    payload = {"user_input": user_input}
-                    response = requests.post(API_URL, json=payload, timeout=60)
+                    # Inject Streamlit secrets into system environment for backend services
+                    if "YOUTUBE_API_KEY" in st.secrets:
+                        os.environ["YOUTUBE_API_KEY"] = st.secrets["YOUTUBE_API_KEY"]
+                    if "GROQ_API_KEY" in st.secrets:
+                        os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
+
+                    # Execute processing function directly
+                    data = analyze_niche(user_input)
                     
-                    if response.status_code == 200:
-                        data = response.json()
-                        
+                    if isinstance(data, dict):
                         if data.get("status") == "NEEDS_NICHE":
                             st.info("💡 Input is broad. Select a refined domain to execute precise analysis:")
                             for niche in data.get("suggested_niches", []):
@@ -249,9 +258,9 @@ else:
                                     st.write(f"**Format:** {idea.get('format')}")
                                     st.write(f"**Target Subtopic:** {idea.get('target_subtopic')}")
                                     st.write(f"**Data Observation:** {idea.get('rationale_from_data')}")
-                                    
-                except requests.exceptions.ConnectionError:
-                    st.error("Connection Error: FastAPI backend is unreachable. Verify Uvicorn server is active on port 8000.")
+                    else:
+                        st.error("Received unexpected response structure from analysis engine.")
+
                 except Exception as e:
                     st.error(f"Execution Error: {str(e)}")
 
