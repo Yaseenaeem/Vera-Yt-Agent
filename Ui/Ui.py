@@ -2,11 +2,20 @@ import streamlit as st
 import os
 import sys
 
-# Add repository root directory to Python path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+# Add both repository root and app directory to Python path
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+APP_DIR = os.path.join(ROOT_DIR, "app")
 
-# --- IMPORT BACKEND LOGIC DIRECTLY (BYPASSES PORT 8000 DECOUPLING) ---
-from app.services.analyzer import analyze_niche
+sys.path.extend([ROOT_DIR, APP_DIR])
+
+# --- IMPORT BACKEND LOGIC DIRECTLY ---
+try:
+    from app.services.analyzer import analyze_niche
+except ModuleNotFoundError:
+    try:
+        from services.analyzer import analyze_niche
+    except ModuleNotFoundError:
+        from analyzer import analyze_niche
 
 # --- 1. PAGE CONFIGURATION ---
 st.set_page_config(
